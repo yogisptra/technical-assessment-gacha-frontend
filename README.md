@@ -22,7 +22,7 @@ npm run dev
 - **Animasi Gacha Interaktif**: Terdapat animasi spesial (*Shuffle Text*, *Pulse/Glow effect*, & efek cahaya *Shine*) saat user melakukan "Roll Gacha", membangun ketegangan (*suspense*) sebelum hadiah akhir ditampilkan dalam *modal box* yang elegan.
 - **Dynamic Dashboard (Role-Based)**: 
   - **User Biasa**: Menampilkan sisa koin, menu roll event, dan riwayat gacha personal.
-  - **Admin**: Menyembunyikan form roll gacha & sisa koin, serta langsung menampilkan *Global History* dari semua user secara ringkas pada tabel aktivitas terbaru.
+  - **Admin**: Menampilkan *Global History* dari semua user secara ringkas pada tabel aktivitas terbaru.
 - **Admin Panel (Advanced)**: Mengelola event & item dengan fitur **Inline Edit**, indikator Total Drop Rate (peringatan warna), **Toggle Status**, serta visualisasi grafik aktivitas gacha mingguan menggunakan *Chart.js*.
 - **Desain Premium & Ringan**: Navigasi *Seamless* tanpa reload (*Vue Router*), transisi *hover* yang mulus, dan *feedback error/loading state* yang jelas (termasuk ikon berputar pada tombol).
 
