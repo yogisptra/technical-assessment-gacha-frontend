@@ -4,18 +4,22 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>Admin Console</h2>
+        <button class="mobile-menu-toggle" @click="isMobileMenuOpen = !isMobileMenuOpen">
+          <Menu class="icon" v-if="!isMobileMenuOpen" />
+          <X class="icon" v-else />
+        </button>
       </div>
-      <ul class="nav-list">
-        <li :class="{ active: currentTab === 'dashboard' }" @click="currentTab = 'dashboard'">
+      <ul class="nav-list" :class="{ 'mobile-hidden': !isMobileMenuOpen }">
+        <li :class="{ active: currentTab === 'dashboard' }" @click="currentTab = 'dashboard'; isMobileMenuOpen = false">
           <LayoutDashboard class="icon" /> Dashboard
         </li>
-        <li :class="{ active: currentTab === 'users' }" @click="currentTab = 'users'">
+        <li :class="{ active: currentTab === 'users' }" @click="currentTab = 'users'; isMobileMenuOpen = false">
           <Users class="icon" /> Users
         </li>
-        <li :class="{ active: currentTab === 'events' }" @click="currentTab = 'events'">
+        <li :class="{ active: currentTab === 'events' }" @click="currentTab = 'events'; isMobileMenuOpen = false">
           <Ticket class="icon" /> Events & Items
         </li>
-        <li :class="{ active: currentTab === 'history' }" @click="currentTab = 'history'">
+        <li :class="{ active: currentTab === 'history' }" @click="currentTab = 'history'; isMobileMenuOpen = false">
           <History class="icon" /> Global History
         </li>
       </ul>
@@ -267,13 +271,14 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { Bar } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
-import { LayoutDashboard, Users, Ticket, History, Calendar, Dices, ArrowLeft, Edit2, Trash2, Check, X, ChevronRight, AlertTriangle, CheckCircle2 } from 'lucide-vue-next';
+import { LayoutDashboard, Users, Ticket, History, Calendar, Dices, ArrowLeft, Edit2, Trash2, Check, X, ChevronRight, AlertTriangle, CheckCircle2, Menu } from 'lucide-vue-next';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
 const API_URL = 'http://localhost:8000/api';
 
 const currentTab = ref('dashboard');
+const isMobileMenuOpen = ref(false);
 const stats = ref({});
 const chartData = ref({});
 const chartOptions = {
@@ -533,6 +538,14 @@ onMounted(() => {
   margin: 0;
 }
 
+.mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
 .nav-list {
   list-style: none;
   padding: 1rem;
@@ -783,4 +796,96 @@ onMounted(() => {
   background: var(--bg-card);
 }
 .text-sm { font-size: 0.85rem; }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+  }
+
+  .sidebar-header {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mobile-menu-toggle {
+    display: block;
+  }
+
+  .nav-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 1rem 1rem 1rem;
+    gap: 0.25rem;
+    overflow-x: hidden;
+  }
+
+  .nav-list.mobile-hidden {
+    display: none;
+  }
+
+  .nav-list li {
+    margin-bottom: 0.25rem;
+    white-space: normal;
+    padding: 0.75rem 1rem;
+  }
+
+  .topbar {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .content-wrapper {
+    padding: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-card {
+    overflow-x: auto;
+  }
+  
+  .add-form {
+    flex-direction: column;
+  }
+  
+  .event-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .event-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .items-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .pagination-wrapper {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
 </style>

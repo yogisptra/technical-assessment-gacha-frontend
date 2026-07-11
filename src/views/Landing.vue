@@ -155,6 +155,15 @@ const isAuthenticated = computed(() => {
   .hero-title {
     font-size: 2.5rem;
   }
+  .cta-buttons {
+    flex-direction: column;
+    width: 100%;
+    padding: 0 1rem;
+  }
+  .btn-lg {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .feature-card {

@@ -5,7 +5,7 @@
         <h1>Welcome, {{ user?.name }}</h1>
         <p>Manage your items and roll for new rewards.</p>
       </div>
-      <div class="balance-card">
+      <div class="balance-card" v-if="!user?.is_admin">
         <div class="balance-info">
           <span class="balance-label">Available Balance</span>
           <span class="balance-value">{{ user?.coins }} <span class="currency">Coins</span></span>
@@ -14,9 +14,9 @@
       </div>
     </div>
 
-    <div class="pro-grid">
+    <div class="pro-grid" :class="{ 'admin-grid-layout': user?.is_admin }">
       <!-- Gacha Action Section -->
-      <div class="pro-card gacha-card animate-fade-in" style="animation-delay: 0.1s">
+      <div class="pro-card gacha-card animate-fade-in" style="animation-delay: 0.1s" v-if="!user?.is_admin">
         <div class="card-header">
           <Dices class="header-icon" />
           <h2>Gacha Roll</h2>
@@ -43,8 +43,7 @@
               <Info class="info-icon"/> Cost per roll: <strong>10 Coins</strong>
             </div>
             <button class="pro-btn-primary full-width" @click="rollGacha" :disabled="rolling || user?.coins < 10 || !selectedEvent">
-              <span v-if="!rolling">Roll Now</span>
-              <span v-else class="loading-state"><Loader2 class="spin-icon" /> Rolling...</span>
+              Roll Now
             </button>
             <div class="pro-error" v-if="gachaError">{{ gachaError }}</div>
           </div>
@@ -62,13 +61,15 @@
             <table class="pro-table">
               <thead>
                 <tr>
+                  <th v-if="user?.is_admin">User</th>
                   <th>Event</th>
                   <th>Item Won</th>
                   <th>Date</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(log, index) in historyData.data" :key="log.id">
+                <tr v-for="(log, index) in (user?.is_admin ? historyData.data.slice(0, 7) : historyData.data)" :key="log.id">
+                  <td v-if="user?.is_admin"><strong>{{ log.user?.name || 'Unknown' }}</strong></td>
                   <td>
                     <div class="event-cell">
                       <Ticket class="cell-icon" />
@@ -84,7 +85,7 @@
               </tbody>
             </table>
             <!-- History Pagination -->
-            <div class="pagination-wrapper" v-if="historyData.last_page > 1">
+            <div class="pagination-wrapper" v-if="historyData.last_page > 1 && !user?.is_admin">
               <button class="pro-btn-outline btn-sm" :disabled="historyData.current_page === 1" @click="fetchHistory(historyData.current_page - 1)">Prev</button>
               <span class="text-secondary text-sm">Page {{ historyData.current_page }} of {{ historyData.last_page }}</span>
               <button class="pro-btn-outline btn-sm" :disabled="historyData.current_page === historyData.last_page" @click="fetchHistory(historyData.current_page + 1)">Next</button>
@@ -97,20 +98,28 @@
     <!-- Professional Modal -->
     <div class="pro-modal-overlay" v-if="showResult">
       <div class="pro-modal animate-zoom-in">
-        <div class="modal-close" @click="showResult = false">
+        <div class="modal-close" @click="showResult = false" v-if="!rolling">
           <X />
         </div>
-        <div class="modal-icon-wrapper">
-          <PackageOpen class="modal-icon text-primary" />
+        <div class="modal-icon-wrapper" :class="{ 'is-rolling': rolling }">
+          <PackageOpen class="modal-icon" v-if="!rolling" />
+          <Loader2 class="modal-icon spin-icon" v-else />
         </div>
-        <h2 class="modal-title">Item Acquired</h2>
-        <p class="modal-subtitle">You successfully rolled an item from <strong>{{ events.find(e => e.id === selectedEvent)?.name }}</strong>.</p>
         
-        <div class="reward-box">
-          <div class="reward-name">{{ gachaResult?.name }}</div>
+        <h2 class="modal-title" v-if="!rolling">Item Acquired</h2>
+        <h2 class="modal-title" v-else>Rolling Gacha...</h2>
+        
+        <p class="modal-subtitle" v-if="!rolling">You successfully rolled an item from <strong>{{ events.find(e => e.id === selectedEvent)?.name }}</strong>.</p>
+        <p class="modal-subtitle" v-else>Please wait, testing your luck!</p>
+        
+        <div class="reward-box" :class="{ 'rolling-box': rolling }">
+          <div class="reward-name" v-if="!rolling">{{ gachaResult?.name }}</div>
+          <div class="reward-name rolling-text" v-else>{{ rollingName }}</div>
         </div>
 
-        <button class="pro-btn-primary full-width mt-4" @click="showResult = false">Continue</button>
+        <button class="pro-btn-primary full-width mt-4" @click="showResult = false" :disabled="rolling">
+          {{ rolling ? 'Please wait...' : 'Continue' }}
+        </button>
       </div>
     </div>
   </div>
@@ -130,6 +139,10 @@ const rolling = ref(false);
 const gachaError = ref('');
 const showResult = ref(false);
 const gachaResult = ref(null);
+
+const rollingName = ref('');
+const genericItems = ['Mystery Box', 'Legendary Sword', 'Common Potion', 'Epic Armor', 'Rare Scroll', 'SSR Ticket', 'Gold Coins', 'Silver Ring', 'Diamond Crown'];
+let shuffleInterval = null;
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -154,7 +167,8 @@ const fetchData = async () => {
 
 const fetchHistory = async (page = 1) => {
   try {
-    const histRes = await axios.get(`${API_URL}/user/history?page=${page}`);
+    const endpoint = user.value?.is_admin ? '/admin/history' : '/user/history';
+    const histRes = await axios.get(`${API_URL}${endpoint}?page=${page}`);
     historyData.value = histRes.data;
   } catch (err) {
     console.error(err);
@@ -169,21 +183,28 @@ const rollGacha = async () => {
   
   rolling.value = true;
   gachaError.value = '';
-  showResult.value = false;
+  showResult.value = true;
+  gachaResult.value = null;
+  
+  shuffleInterval = setInterval(() => {
+    rollingName.value = genericItems[Math.floor(Math.random() * genericItems.length)];
+  }, 100);
   
   try {
     const res = await axios.post(`${API_URL}/gacha`, { event_id: selectedEvent.value });
-    gachaResult.value = res.data.item;
     
     setTimeout(() => {
+      clearInterval(shuffleInterval);
+      gachaResult.value = res.data.item;
       rolling.value = false;
-      showResult.value = true;
       fetchData();
       fetchHistory(1);
-    }, 1000);
+    }, 2000);
     
   } catch (err) {
+    clearInterval(shuffleInterval);
     rolling.value = false;
+    showResult.value = false;
     gachaError.value = err.response?.data?.error || 'Gacha failed';
   }
 };
@@ -266,8 +287,26 @@ onMounted(() => {
   gap: 2rem;
 }
 
+.admin-grid-layout {
+  grid-template-columns: 1fr !important;
+}
+
 @media (max-width: 768px) {
   .pro-grid { grid-template-columns: 1fr; }
+  
+  .pro-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .balance-card {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .pro-dashboard {
+    padding: 1.5rem 1rem;
+  }
 }
 
 .pro-card {
@@ -423,12 +462,12 @@ onMounted(() => {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 2.5rem;
-  width: 100%;
-  max-width: 400px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 320px;
   text-align: center;
   position: relative;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .modal-close {
@@ -444,43 +483,93 @@ onMounted(() => {
 }
 
 .modal-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 1.5rem;
-  background-color: #e0e7ff;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1.25rem;
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
 }
 .modal-icon {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
+  color: var(--primary-color);
 }
 
 .modal-title {
   font-size: 1.25rem;
+  font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
 .modal-subtitle {
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin-bottom: 2rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
 }
 
 .reward-box {
-  background-color: var(--bg-main);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--bg-main) 0%, #eef2ff 100%);
+  border: 2px dashed var(--primary-color);
+  border-radius: 12px;
+  padding: 1.25rem;
   margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.reward-box::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+  transform: rotate(30deg);
+  animation: shine 2.5s infinite linear;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(30deg); }
+  100% { transform: translateX(100%) rotate(30deg); }
 }
 
 .reward-name {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--primary-color);
   letter-spacing: -0.025em;
+  position: relative;
+  z-index: 1;
+}
+
+.is-rolling {
+  animation: pulse 1s infinite alternate;
+}
+@keyframes pulse {
+  from { transform: scale(0.95); opacity: 0.8; }
+  to { transform: scale(1.05); opacity: 1; }
+}
+
+.rolling-text {
+  opacity: 0.7;
+  filter: blur(1px);
+  animation: jitter 0.1s infinite;
+}
+@keyframes jitter {
+  0% { transform: translate(1px, 1px); }
+  50% { transform: translate(-1px, -1px); }
+  100% { transform: translate(1px, -1px); }
+}
+
+.rolling-box::before {
+  animation: fast-shine 0.5s infinite linear !important;
+}
+@keyframes fast-shine {
+  0% { transform: translateX(-100%) rotate(30deg); }
+  100% { transform: translateX(100%) rotate(30deg); }
 }
 
 .pagination-wrapper {

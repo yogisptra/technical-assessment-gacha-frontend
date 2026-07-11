@@ -2,16 +2,26 @@
   <div id="app">
     <nav class="pro-nav" v-if="isAuthenticated">
       <div class="nav-container">
-        <div class="nav-brand">
-          <Box class="brand-icon" />
-          <span>Gacha</span>
+        <div class="nav-mobile-header">
+          <div class="nav-brand">
+            <Box class="brand-icon" />
+            <span>Gacha</span>
+          </div>
+          
+          <button class="mobile-nav-toggle" @click="isNavOpen = !isNavOpen">
+            <Menu v-if="!isNavOpen" class="icon" style="width:24px;height:24px" />
+            <X v-else class="icon" style="width:24px;height:24px" />
+          </button>
         </div>
-        <div class="nav-links">
-          <router-link to="/dashboard" class="nav-item">Overview</router-link>
-          <router-link v-if="isAdmin" to="/admin" class="nav-item">Admin</router-link>
-        </div>
-        <div class="nav-actions">
-          <button @click="logout" class="pro-btn-outline btn-sm">Log out</button>
+
+        <div class="nav-content" :class="{ 'mobile-hidden': !isNavOpen }">
+          <div class="nav-links">
+            <router-link to="/dashboard" class="nav-item" @click="isNavOpen = false">Overview</router-link>
+            <router-link v-if="isAdmin" to="/admin" class="nav-item" @click="isNavOpen = false">Dashboard</router-link>
+          </div>
+          <div class="nav-actions">
+            <button @click="logout" class="pro-btn-outline btn-sm">Log out</button>
+          </div>
         </div>
       </div>
     </nav>
@@ -22,11 +32,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { Box } from 'lucide-vue-next';
+import { Box, Menu, X } from 'lucide-vue-next';
 
 const router = useRouter();
+const isNavOpen = ref(false);
 
 const isAuthenticated = computed(() => {
   return !!localStorage.getItem('token');
@@ -78,11 +89,80 @@ const logout = () => {
   height: 22px;
 }
 
+.mobile-nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.nav-content {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .nav-links {
   display: flex;
   gap: 1.5rem;
   flex: 1;
   margin-left: 3rem;
+}
+
+.nav-mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 768px) {
+  .nav-container {
+    flex-direction: column;
+    height: auto;
+    padding: 1rem 1.5rem;
+    align-items: stretch;
+  }
+  
+  .nav-mobile-header {
+    width: 100%;
+  }
+
+  .mobile-nav-toggle {
+    display: block;
+  }
+  
+  .nav-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 0.5rem 0;
+  }
+  
+  .nav-content.mobile-hidden {
+    display: none;
+  }
+  
+  .nav-links {
+    margin-left: 0;
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+  }
+  
+  .nav-item {
+    padding: 0.25rem 0;
+  }
+  
+  .nav-actions {
+    width: 100%;
+  }
+  
+  .nav-actions button {
+    width: 100%;
+  }
 }
 
 .nav-item {

@@ -173,4 +173,19 @@ const handleRegister = async () => {
 .auth-link:hover {
   text-decoration: underline;
 }
+
+@media (max-width: 768px) {
+  .auth-card {
+    padding: 1.5rem;
+    margin-top: 3rem;
+  }
+  .auth-container {
+    padding: 1rem;
+    align-items: flex-start;
+  }
+  .back-link {
+    top: 1rem;
+    left: 1rem;
+  }
+}
 </style>
